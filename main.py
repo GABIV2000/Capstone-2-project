@@ -11,7 +11,18 @@ tab1, tab2, tab3 = st.tabs(["Home", "AI Tool", "Questionnaire"])
 with tab1:
     st.header("This program will help determinate fraudulent job listings.")
 with tab2:
-    st.header("copy and paste the job description into AI input box below")
+    st.title("AI Powered Job Fraud Detector (Powered by Gemini)")
+
+    st.subheader("Job Information")
+
+    job_title = st.text_input("Job Title")
+    company_name = st.text_input("Company Name")
+    location = st.text_input("Location")
+    salary = st.text_input("Salary (if listed)")
+    source = st.selectbox(
+        "Where did you find this listing?",
+        ["Indeed", "LinkedIn", "Company Website", "Referral", "Other"]
+    )
 
     GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
     if not GOOGLE_API_KEY:
@@ -26,28 +37,37 @@ with tab2:
 
     inputListing = st.text_area("Paste the job listing below:", height=300)
 
+    job_metadata = f"""
+        Job Title: {job_title or "Not specified"}
+        Company: {company_name or "Not specified"}
+        Location: {location or "Not specified"}
+        Salary: {salary or "Not specified"}
+        Source: {source or "Not specified"}
+        """
+
     if st.button("Analyze Listing"):
         if not inputListing.strip():
             st.warning("Please input something into the prompt.")
         else:
             with st.spinner("Analyzing with Gemini..."):
                 prompt = f"""
-    You are going to analyze this job listing if it is fraudulent or not.
-    Provide a brief summary, then go into detail as to what's wrong with the listing.
-    
-    Score the listing based on these scores:
-    - Verdict: Fraudulent / Legitimate / Uncertain
-    - Confidence: (0-100)
-    - Margin of error: (percentage)
-    - Conclusion and explanation: (why this verdict)
-    
-    Order the output by scores first, then short summary, and lastly detailed summary.
+                        You are going to analyze this job listing to determine if it is fraudulent or not.
 
-    Job Listing:
-    \"\"\"
-    {inputListing}
-    \"\"\"
-    """
+                        Job Information:
+                        {job_metadata}
+
+                        Job Listing:
+                        \"\"\"
+                        {inputListing}
+                        \"\"\"
+
+                        Score the listing based on these:
+                        - Verdict: Fraudulent / Legitimate / Uncertain
+                        - Confidence: (0-100)
+                        - Margin of error: (percentage)
+                        - Conclusion and explanation: (why this verdict)
+                    """
+
                 try:
                     response = model.generate_content(prompt)
                     st.success("Analysis Complete.")
